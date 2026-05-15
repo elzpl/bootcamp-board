@@ -6,6 +6,7 @@ import os
 import uvicorn
 from database import init_db
 from bot import BootcampBot, register_commands
+from importer import import_goals_forum
 from api import app
 
 
@@ -15,6 +16,7 @@ async def run_bot(bot: BootcampBot):
         print("WARNING: DISCORD_TOKEN not set — bot disabled")
         return
     async with bot:
+        asyncio.ensure_future(import_goals_forum(bot))
         await bot.start(token)
 
 
