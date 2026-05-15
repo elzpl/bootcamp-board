@@ -16,11 +16,11 @@ def parse_watched_channels() -> dict[str, str]:
 
 def detect_inline_tag(content: str) -> str | None:
     c = content.lower()
-    if "#shipped" in c:
+    if "#shipped" in c or "#shipping" in c:
         return "shipped"
-    if "#standup" in c:
+    if "#standup" in c or "#update" in c:
         return "standup"
-    if "#blocker" in c or "#blockers" in c:
+    if "#blocker" in c or "#blockers" in c or "#blocked" in c:
         return "blocker"
     return None
 
