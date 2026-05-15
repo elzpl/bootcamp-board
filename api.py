@@ -3,6 +3,7 @@ from datetime import date
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from database import get_all_members, get_global_stats
+from importer import run_import
 
 DEMO_DAY = date.fromisoformat(os.getenv("DEMO_DAY", "2026-05-23"))
 GRID_DAYS = int(os.getenv("GRID_DAYS", "14"))
@@ -41,6 +42,12 @@ async def members():
         key=lambda m: m["total_commits"], reverse=True
     )
     return {"builders": builders, "finding_footing": finding}
+
+
+@app.post("/api/import")
+async def trigger_import():
+    result = await run_import()
+    return result
 
 
 app.mount("/", StaticFiles(directory="web", html=True), name="static")
