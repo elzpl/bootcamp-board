@@ -13,14 +13,17 @@
       border-radius: 3px;
       background: #e8e4dc;
       flex-shrink: 0;
-      position: relative;
     }
     .grid-cell[data-level="1"] { background: #c6e48b; }
     .grid-cell[data-level="2"] { background: #7bc96f; }
     .grid-cell[data-level="3"] { background: #239a3b; }
     .grid-cell[data-level="4"] { background: #196127; }
-    /* Session day ring */
     .grid-cell[data-session="1"] { outline: 2px solid #f59e0b; outline-offset: 1px; }
+
+    /* Smaller cells on mobile */
+    @media (max-width: 639px) {
+      .grid-cell { width: 11px; height: 11px; border-radius: 2px; }
+    }
 
     .tag-shipped  { background: #dcfce7; color: #166534; }
     .tag-standup  { background: #dbeafe; color: #1e40af; }
@@ -46,19 +49,45 @@
     .stat-pill.highlight {
       border-color: #f59e0b; background: #fffbeb; color: #92400e;
     }
+
+    /* Stats grid: 2 cols on mobile, flow on desktop */
+    #stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    @media (min-width: 640px) {
+      #stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+      .stat-pill { flex: none; }
+    }
+
+    /* Mobile stat pill: fill width, left-aligned */
+    @media (max-width: 639px) {
+      .stat-pill {
+        padding: 10px 14px;
+        font-size: 13px;
+        border-radius: 14px;
+        justify-content: flex-start;
+      }
+    }
   </style>
 </head>
-<body class="min-h-screen p-8">
+<body class="min-h-screen p-4 sm:p-8">
   <div class="max-w-4xl mx-auto">
-    <div class="flex items-center justify-between mb-8">
-      <h1 class="text-2xl font-bold text-gray-900 tracking-tight">Builder Board</h1>
+
+    <div class="flex items-center justify-between mb-6 sm:mb-8">
+      <h1 class="text-xl sm:text-2xl font-bold text-gray-900 tracking-tight">Builder Board</h1>
       <span id="updated" class="text-xs text-gray-400"></span>
     </div>
 
-    <div id="stats" class="flex flex-wrap gap-3 mb-10"></div>
+    <div id="stats" class="mb-8 sm:mb-10"></div>
     <div id="board"></div>
 
-    <div class="mt-6 flex items-center gap-3 text-xs text-gray-400">
+    <div class="mt-6 flex flex-wrap items-center gap-3 text-xs text-gray-400">
       <span class="flex items-center gap-1">
         <span style="display:inline-block;width:10px;height:10px;border-radius:2px;outline:2px solid #f59e0b;outline-offset:1px;background:#e8e4dc"></span>
         session day
@@ -76,6 +105,7 @@
         5+ commits
       </span>
     </div>
+
   </div>
 
   <script>
@@ -85,6 +115,8 @@
       ["#e8d5c4","#7c4f2f"], ["#d4e8d4","#2f5c2f"], ["#d4d4e8","#2f2f7c"],
       ["#e8d4e8","#5c2f5c"], ["#e8e4d4","#5c4f2f"], ["#d4e4e8","#2f4f5c"],
     ];
+
+    const isMobile = () => window.innerWidth < 640;
 
     function initials(name) {
       return name.split(" ").slice(0,2).map(w => w[0]).join("").toUpperCase();
@@ -127,13 +159,14 @@
         : `<div class="avatar" style="background:${bg};color:${fg}">${initials(m.display_name)}</div>`;
 
       const streak = m.streak > 1
-        ? `<span class="text-xs text-orange-500 font-semibold ml-1">🔥 ${m.streak}d</span>` : "";
+        ? `<span class="text-xs text-orange-500 font-semibold">🔥 ${m.streak}d</span>` : "";
 
-      return `
-        <div class="flex items-center gap-4 py-5 border-b border-gray-100 last:border-0">
+      // Desktop layout: avatar | info | grid | commit count
+      const desktop = `
+        <div class="hidden sm:flex items-center gap-4 py-5 border-b border-gray-100 last:border-0">
           ${avatar}
           <div class="flex flex-col gap-1.5 min-w-[160px]">
-            <div class="flex items-center">
+            <div class="flex items-center gap-2">
               <span class="font-semibold text-gray-900 text-sm">${m.display_name}</span>${streak}
             </div>
             <span class="text-gray-400 text-xs">${m.project_name}</span>
@@ -145,6 +178,29 @@
             <div class="text-xs text-gray-400">commits</div>
           </div>
         </div>`;
+
+      // Mobile layout: avatar + name + commits on top row, tags below, grid at bottom
+      const mobile = `
+        <div class="sm:hidden py-4 border-b border-gray-100 last:border-0">
+          <div class="flex items-center gap-3 mb-2">
+            ${avatar}
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-gray-900 text-sm truncate">${m.display_name}</span>
+                ${streak}
+              </div>
+              <span class="text-gray-400 text-xs truncate block">${m.project_name}</span>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="text-lg font-bold text-gray-900">${m.total_commits}</div>
+              <div class="text-xs text-gray-400">commits</div>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-1 mb-3">${renderTags(m.tags)}</div>
+          <div class="flex gap-1 flex-wrap">${renderGrid(m.grid)}</div>
+        </div>`;
+
+      return desktop + mobile;
     }
 
     function renderSection(title, members) {
@@ -152,7 +208,7 @@
       return `
         <div class="mb-8">
           <div class="section-label">${title}</div>
-          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-6">
+          <div class="bg-white rounded-2xl border border-gray-100 shadow-sm px-4 sm:px-6">
             ${members.map(renderMember).join("")}
           </div>
         </div>`;
@@ -166,11 +222,20 @@
         { icon: "🔥", value: s.on_streaks, label: "on streaks" },
       ];
       if (s.days_to_next_session !== null) {
-        const label = s.days_to_next_session === 0 ? "session today!" : `days to next session`;
-        items.splice(2, 0, { icon: "🎯", value: s.days_to_next_session === 0 ? "" : s.days_to_next_session, label, hl: s.days_to_next_session <= 1 });
+        const label = s.days_to_next_session === 0 ? "session today!" : "days to next session";
+        items.splice(2, 0, {
+          icon: "🎯",
+          value: s.days_to_next_session === 0 ? "" : s.days_to_next_session,
+          label,
+          hl: s.days_to_next_session <= 1
+        });
       }
       return items.map(i =>
-        `<div class="stat-pill${i.hl ? " highlight" : ""}"><span>${i.icon}</span>${i.value !== "" ? `<strong>${i.value}</strong>` : ""} ${i.label}</div>`
+        `<div class="stat-pill${i.hl ? " highlight" : ""}">
+          <span>${i.icon}</span>
+          ${i.value !== "" ? `<strong>${i.value}</strong>` : ""}
+          <span>${i.label}</span>
+        </div>`
       ).join("");
     }
 
