@@ -65,9 +65,17 @@ async def record_event(member_id: int, tag: str, message_text: str, message_url:
         await db.commit()
 
 
-async def get_all_members(grid_days: int = 14):
+async def get_all_members(grid_days: int = 13):
     today = date.today()
-    start = today - timedelta(days=grid_days - 1)
+    bootcamp_start = os.getenv("BOOTCAMP_START", "")
+    demo_day = os.getenv("DEMO_DAY", "")
+    if bootcamp_start and demo_day:
+        start = date.fromisoformat(bootcamp_start)
+        end = date.fromisoformat(demo_day)
+        grid_days = (end - start).days + 1
+    else:
+        start = today - timedelta(days=grid_days - 1)
+        end = today
 
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row

@@ -6,7 +6,7 @@ from database import get_all_members, get_global_stats
 from importer import run_import
 
 DEMO_DAY = date.fromisoformat(os.getenv("DEMO_DAY", "2026-05-23"))
-GRID_DAYS = int(os.getenv("GRID_DAYS", "14"))
+GRID_DAYS = int(os.getenv("GRID_DAYS", "13"))
 BUILDER_THRESHOLD = int(os.getenv("BUILDER_THRESHOLD", "10"))
 
 _raw_sessions = os.getenv("SESSION_DATES", "")
